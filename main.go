@@ -1,21 +1,56 @@
 package main
 
 import (
+	"encoding/csv"
+	"flag"
 	"fmt"
+	"os"
 )
 
-//TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
-// the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.</p>
-
 func main() {
-	//TIP <p>Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined text
-	// to see how GoLand suggests fixing the warning.</p><p>Alternatively, if available, click the lightbulb to view possible fixes.</p>
-	s := "gopher"
-	fmt.Printf("Hello and welcome, %s!\n", s)
+	csvFilename := flag.String("csv", "problems.csv", "a csv file name in the format of 'question,answer'")
+	flag.Parse()
 
-	for i := 1; i <= 5; i++ {
-		//TIP <p>To start your debugging session, right-click your code in the editor and select the Debug option.</p> <p>We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-		// for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.</p>
-		fmt.Println("i =", 100/i)
+	file, err := os.Open(*csvFilename)
+	if err != nil {
+		exit(fmt.Sprintf("Failed to open CSV file: %s", *csvFilename))
 	}
+	r := csv.NewReader(file)
+	lines, err := r.ReadAll()
+	if err != nil {
+		exit("Failed to parse CSV")
+	}
+	problems := parseLines(lines)
+
+	correct := 0
+	for i, p := range problems {
+		fmt.Printf("Problem: #%d: %s \n", i+1, p.question)
+		var answer string
+		fmt.Scanf("%s\n", &answer)
+		if answer == p.answer {
+			correct++
+		}
+	}
+	fmt.Printf("You scored %d out of %d\n", correct, len(problems))
+}
+
+func parseLines(lines [][]string) []problem {
+	ret := make([]problem, len(lines))
+	for i, line := range lines {
+		ret[i] = problem{
+			question: line[0],
+			answer:   line[1],
+		}
+	}
+	return ret
+}
+
+type problem struct {
+	question string
+	answer   string
+}
+
+func exit(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
 }
